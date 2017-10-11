@@ -19,11 +19,12 @@ along with PyORACC. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
-from unittest import TestCase, skip
+from unittest import TestCase
+
 import pytest
 
-from ...atf.atflex import AtfLexer
-from ...atf.atfyacc import AtfParser
+from pyoracc.atf.common.atfyacc import AtfParser
+from ...atf.common.atflex import AtfLexer
 from ...model.comment import Comment
 from ...model.composite import Composite
 from ...model.line import Line

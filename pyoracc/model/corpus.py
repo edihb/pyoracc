@@ -19,10 +19,12 @@ along with PyORACC. If not, see <http://www.gnu.org/licenses/>.
 
 
 from __future__ import print_function
-import sys
-import os
+
 import codecs
-from ..atf.atffile import AtfFile
+import os
+import sys
+
+from pyoracc.atf.common.atffile import AtfFile
 
 
 class Corpus(object):

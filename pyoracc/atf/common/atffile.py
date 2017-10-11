@@ -18,9 +18,10 @@ along with PyORACC. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
+from mako.template import Template
+
 from .atflex import AtfLexer
 from .atfyacc import AtfParser
-from mako.template import Template
 
 
 class AtfFile(object):
@@ -45,7 +46,7 @@ class AtfFile(object):
 def _debug_lex_and_yac_file(file, debug=0, skipinvalid=False):
     import codecs
     text = codecs.open(file, encoding='utf-8-sig').read()
-    from pyoracc.atf.atffile import AtfLexer
+    from pyoracc.atf.common.atffile import AtfLexer
     lexer = AtfLexer(debug=debug, skipinvalid=skipinvalid).lexer
     lexer.input(text)
     for tok in lexer:
