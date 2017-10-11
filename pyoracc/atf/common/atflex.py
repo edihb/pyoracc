@@ -21,10 +21,13 @@ along with PyORACC. If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-import ply.lex as lex
 import re
 import warnings
+
+import ply.lex as lex
+
 from pyoracc import _pyversion
+from pyoracc.atf.common.atflexicon import AtfLexicon
 
 
 class AtfLexer(object):
@@ -42,137 +45,45 @@ class AtfLexer(object):
         source = self._keyword_dict(source, extra)
         return source.get(value, fallback)
 
-    structures = [
-        'TABLET',
-        'ENVELOPE',
-        'PRISM',
-        'BULLA',
-        'OBVERSE',
-        'REVERSE',
-        'LEFT',
-        'RIGHT',
-        'TOP',
-        'BOTTOM',
-        'CATCHLINE',
-        'COLOPHON',
-        'DATE',
-        'SIGNATURES',
-        'SIGNATURE',
-        'SUMMARY',
-        'FACE',
-        'EDGE',
-        'COLUMN',
-        'SEAL',
-        'SEALINGS',
-        'WITNESSES',
-        'TRANSLATION',
-        'NOTE',
-        'M',
-        'COMPOSITE',
-        'LABEL',
-        'INCLUDE',
-        'SCORE'
-    ]
+    structures = AtfLexicon.STRUCTURES
 
-    long_argument_structures = [
-        'OBJECT',
-        'SURFACE',
-        'FRAGMENT',
-        'HEADING'
-    ]
+    long_argument_structures = AtfLexicon.LONG_ARGUMENT_STRUCTURES
 
-    protocols = ['ATF', 'LEM', 'PROJECT', 'NOTE', "LINK",
-                 "KEY", "BIB", "TR", 'CHECK', 'LEMMATIZER', 'VERSION', 'VAR']
+    protocols = AtfLexicon.PROTOCOLS
 
-    protocol_keywords = ['LANG', 'USE', 'MATH', 'LEGACY', 'MYLINES',
-                         'LEXICAL', 'UNICODE', 'DEF', "SOURCE"]
+    protocol_keywords = AtfLexicon.PROTOCOL_KEYWORDS
 
-    translation_keywords = ['PARALLEL', 'PROJECT', "LABELED"]
+    translation_keywords = AtfLexicon.TRANSLATION_KEYWORDS
 
-    dollar_keywords = [
-        'MOST', 'LEAST', 'ABOUT',
-        'SEVERAL', 'SOME', 'REST', 'OF', 'START', 'BEGINNING', 'MIDDLE', 'END',
-        'COLUMNS', 'LINE', 'LINES', 'CASE', 'CASES', 'SURFACE', 'SPACE',
-        'BLANK', 'BROKEN', 'EFFACED', 'ILLEGIBLE', 'MISSING', 'TRACES',
-        'RULING', 'SINGLE', 'DOUBLE', 'TRIPLE', 'AT']
+    dollar_keywords = AtfLexicon.DOLLAR_KEYWORDS
 
-    base_tokens = [
-        'AMPERSAND',
-        'LINELABEL',
-        'SCORELABEL',
-        'ID',
-        'DOLLAR',
-        'PARENTHETICALID',
-        'HAT',
-        'SEMICOLON',
-        'EQUALS',
-        'MULTILINGUAL',
-        'LSQUARE',
-        'RSQUARE',
-        'EXCLAIM',
-        'QUERY',
-        'STAR',
-        'RANGE',
-        'HASH',
-        'NEWLINE',
-        'REFERENCE',
-        'MINUS',
-        'FROM',
-        'TO',
-        'PARBAR',
-        'OPENR',
-        'CLOSER',
-        'COMMA',
-        'COMMENT',
-        'EQUALBRACE'
-    ]
+    base_tokens = AtfLexicon.BASE_TOKENS
 
-    keyword_tokens = sorted(list(set(
-        structures +
-        long_argument_structures +
-        protocols +
-        protocol_keywords +
-        dollar_keywords +
-        translation_keywords
-    )))
+    keyword_tokens = AtfLexicon.KEYWORD_TOKENS
 
-    tokens = sorted(list(set(
-        keyword_tokens +
-        base_tokens)))
+    tokens = AtfLexicon.TOKENS
 
-    exclusive_state_names = [
-        'flagged',
-        'text',
-        'lemmatize',
-        'nonequals',
-        'parallel',  # translation
-        'labeled',  # translation
-        'interlinear',  # translation
-        'transctrl',
-        'para',
-        'absorb'
-    ]
+    exclusive_state_names = AtfLexicon.EXCLUSIVE_STATE_NAMES
 
-    exc_states = [(state, 'exclusive') for state in exclusive_state_names]
+    exc_states = AtfLexicon.EXC_STATES
 
-    inclusive_state_names = [
-        'score'
-    ]
-    inc_states = [(state, 'inclusive') for state in inclusive_state_names]
+    inclusive_state_names = AtfLexicon.INCLUSIVE_STATE_NAMES
 
-    states = exc_states + inc_states
+    inc_states = AtfLexicon.INC_STATES
 
-    t_AMPERSAND = "\&"
-    t_HASH = "\#"
-    t_EXCLAIM = "\!"
-    t_QUERY = "\?"
-    t_STAR = "\*"
-    t_DOLLAR = "\$"
-    t_MINUS = "\-"
-    t_FROM = "\<\<"
-    t_TO = "\>\>"
-    t_COMMA = "\,"
-    t_PARBAR = "\|\|"
+    states = AtfLexicon.STATES
+
+    t_AMPERSAND = AtfLexicon.T_AMPERSAND
+    t_HASH = AtfLexicon.T_HASH
+    t_EXCLAIM = AtfLexicon.T_EXCLAIM
+    t_QUERY = AtfLexicon.T_QUERY
+    t_STAR = AtfLexicon.T_STAR
+    t_DOLLAR = AtfLexicon.T_DOLLAR
+    t_MINUS = AtfLexicon.T_MINUS
+    t_FROM = AtfLexicon.T_FROM
+    t_TO = AtfLexicon.T_TO
+    t_COMMA = AtfLexicon.T_COMMA
+    t_PARBAR = AtfLexicon.T_PARBAR
 
     t_INITIAL_transctrl_PARENTHETICALID = "\([^\n\r]*\)"
 
@@ -395,7 +306,7 @@ class AtfLexer(object):
             t.type = "REFERENCE"
         return t
 
-    t_parallel_QUERY = "\?"
+    t_parallel_QUERY = AtfLexicon.T_QUERY
 
     def t_parallel_LINELABEL(self, t):
         r'^([^\.\ \t]*)\.[\ \t]*'
@@ -491,12 +402,12 @@ class AtfLexer(object):
         t.value = t.value.strip()
         return t
 
-    t_flagged_HASH = "\#"
-    t_flagged_EXCLAIM = "\!"
-    t_flagged_QUERY = "\?"
-    t_flagged_STAR = "\*"
+    t_flagged_HASH = AtfLexicon.T_HASH
+    t_flagged_EXCLAIM = AtfLexicon.T_EXCLAIM
+    t_flagged_QUERY = AtfLexicon.T_QUERY
+    t_flagged_STAR = AtfLexicon.T_STAR
     t_flagged_parallel_para_HAT = "[\ \t]*\^[\ \t]*"
-    t_flagged_EQUALS = "\="
+    t_flagged_EQUALS = AtfLexicon.T_EQUALS
     # --- Rules for paragaph state----------------------------------
     # Free text, ended by double new line
 
@@ -537,7 +448,7 @@ class AtfLexer(object):
         t.value = t.value.strip()
         return t
 
-    t_nonequals_EQUALS = "\="
+    t_nonequals_EQUALS = AtfLexicon.T_EQUALS
 
     # --- RULES FOR THE absorb STATE -----
     # Absorb everything
