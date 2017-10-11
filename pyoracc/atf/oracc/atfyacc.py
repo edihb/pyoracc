@@ -1,4 +1,4 @@
-from pyoracc.atf.common.atfyacc import AtfBaseParser
+from pyoracc.atf.common.atfbaseyacc import AtfBaseParser
 
 
 class AtfOraccParser(AtfBaseParser):
