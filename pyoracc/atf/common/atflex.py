@@ -32,7 +32,8 @@ from pyoracc.atf.common.atflexicon import AtfLexicon
 
 class AtfLexer(object):
 
-    def _keyword_dict(self, tokens, extra):
+    @staticmethod
+    def _keyword_dict(tokens, extra):
         keywords = {token.lower(): token for token in tokens}
         firstcap = {token.title(): token for token in tokens}
         keywords.update(firstcap)
@@ -91,35 +92,41 @@ class AtfLexer(object):
         r'[\t ]+'
         # NO TOKEN
 
-    def t_MULTILINGUAL(self, t):
+    @staticmethod
+    def t_MULTILINGUAL(t):
         "\=\="
         t.lexer.push_state("text")
         return t
 
-    def t_EQUALBRACE(self, t):
+    @staticmethod
+    def t_EQUALBRACE(t):
         "^\=\{"
         t.lexer.push_state('text')
         return t
 
-    def t_EQUALS(self, t):
+    @staticmethod
+    def t_EQUALS(t):
         "\="
         t.lexer.push_state('flagged')
         return t
 
-    def t_INITIAL_parallel_labeled_COMMENT(self, t):
+    @staticmethod
+    def t_INITIAL_parallel_labeled_COMMENT(t):
         r'^\#+(?![a-zA-Z]+\:)'
         # Negative lookahead to veto protocols as comments
         t.lexer.push_state('absorb')
         return t
 
-    def t_INITIAL_parallel_labeled_DOTLINE(self, t):
+    @staticmethod
+    def t_INITIAL_parallel_labeled_DOTLINE(t):
         r'^\s*\.\s*[\n\r]'
         # A line with just a dot, occurs in brm_4_19 at the end
         t.type = "NEWLINE"
         return t
 
     # In the base state, a newline doesn't change state
-    def t_NEWLINE(self, t):
+    @staticmethod
+    def t_NEWLINE(t):
         r'\s*[\n\r]'
         t.lexer.lineno += t.value.count("\n")
         return t
@@ -174,7 +181,8 @@ class AtfLexer(object):
                                   (None, t.lineno, t.lexpos, valuestring))
         return t
 
-    def t_labeled_OPENR(self, t):
+    @staticmethod
+    def t_labeled_OPENR(t):
         "\@\("
         t.lexer.push_state("para")
         t.lexer.push_state("transctrl")
@@ -216,13 +224,15 @@ class AtfLexer(object):
                                   (None, t.lineno, t.lexpos, valuestring))
         return t
 
-    def t_LINELABEL(self, t):
+    @staticmethod
+    def t_LINELABEL(t):
         r'^[^\ \t\n]*\.'
         t.value = t.value[:-1]
         t.lexer.push_state('text')
         return t
 
-    def t_score_SCORELABEL(self, t):
+    @staticmethod
+    def t_score_SCORELABEL(t):
         r'^[^.:\ \t\#][^.:\ \t]*\:'
         t.value = t.value[:-1]
         t.lexer.push_state('text')
@@ -258,7 +268,8 @@ class AtfLexer(object):
     # one or more newlines returns to the base state
     # In several of the files such as bb_2_006.atf the blank line contains tab
     # or other trailing whitespace
-    def t_flagged_text_lemmatize_transctrl_nonequals_absorb_NEWLINE(self, t):
+    @staticmethod
+    def t_flagged_text_lemmatize_transctrl_nonequals_absorb_NEWLINE(t):
         r'[\n\r]*\s*[\n\r]+'
         t.lexer.lineno += t.value.count("\n")
         t.lexer.pop_state()
@@ -308,33 +319,38 @@ class AtfLexer(object):
 
     t_parallel_QUERY = AtfLexicon.T_QUERY
 
-    def t_parallel_LINELABEL(self, t):
+    @staticmethod
+    def t_parallel_LINELABEL(t):
         r'^([^\.\ \t]*)\.[\ \t]*'
         t.value = t.value.strip(" \t.")
         return t
 
-    def t_parallel_labeled_DOLLAR(self, t):
+    @staticmethod
+    def t_parallel_labeled_DOLLAR(t):
         "^\$"
         t.lexer.push_state("absorb")
         return t
 
-    t_transctrl_MINUS = "\-\ "
+    t_transctrl_MINUS = AtfLexicon.T_TRANSCTRL_MINUS
 
-    def t_transctrl_CLOSER(self, t):
+    @staticmethod
+    def t_transctrl_CLOSER(t):
         "\)"
         t.lexer.pop_state()
         return t
 
     # In parallel states, a newline doesn't change state
     # A newline followed by a space gives continuation
-    def t_parallel_NEWLINE(self, t):
+    @staticmethod
+    def t_parallel_NEWLINE(t):
         r'\s*[\n\r](?![ \t])'
         t.lexer.lineno += t.value.count("\n")
         return t
 
     # In interlinear states, a newline which is not continuation leaves state
     # A newline followed by a space gives continuation
-    def t_interlinear_NEWLINE(self, t):
+    @staticmethod
+    def t_interlinear_NEWLINE(t):
         r'\s*[\n\r](?![ \t])'
         t.lexer.lineno += t.value.count("\n")
         t.lexer.pop_state()
@@ -342,7 +358,8 @@ class AtfLexer(object):
 
     # In labeled translation, a newline doesn't change state
     # A newline just passed through
-    def t_labeled_NEWLINE(self, t):
+    @staticmethod
+    def t_labeled_NEWLINE(t):
         r'\s*[\n\r]'
         t.lexer.lineno += t.value.count("\n")
         return t
@@ -368,7 +385,8 @@ class AtfLexer(object):
         t.value = t.value.replace("\r", " ")
         return t
 
-    def t_parallel_labeled_AMPERSAND(self, t):
+    @staticmethod
+    def t_parallel_labeled_AMPERSAND(t):
         r'\&'
         # New document, so leave translation state
         t.lexer.pop_state()
@@ -422,7 +440,8 @@ class AtfLexer(object):
         return t
 
     # Paragraph state is ended by a double newline
-    def t_para_NEWLINE(self, t):
+    @staticmethod
+    def t_para_NEWLINE(t):
         r'\r?\n\s*[\n\r]*\n'
         t.lexer.lineno += t.value.count("\n")
         t.lexer.pop_state()
@@ -443,7 +462,8 @@ class AtfLexer(object):
 
     # --- RULES FOR THE nonequals STATE -----
     # Absorb everything except an equals
-    def t_nonequals_ID(self, t):
+    @staticmethod
+    def t_nonequals_ID(t):
         "[^\=\n\r]+"
         t.value = t.value.strip()
         return t
@@ -452,7 +472,8 @@ class AtfLexer(object):
 
     # --- RULES FOR THE absorb STATE -----
     # Absorb everything
-    def t_absorb_ID(self, t):
+    @staticmethod
+    def t_absorb_ID(t):
         "[^\n\r]+"
         t.value = t.value.strip()
         return t

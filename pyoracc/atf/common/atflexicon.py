@@ -17,6 +17,7 @@ class AtfLexicon(object):
     T_EXCLAIM = "\!"
     T_HASH = "\#"
     T_AMPERSAND = "\&"
+    T_TRANSCTRL_MINUS = "\-\ "
 
     STRUCTURES = ['TABLET', 'ENVELOPE', 'PRISM', 'BULLA', 'OBVERSE', 'REVERSE', 'LEFT', 'RIGHT', 'TOP', 'BOTTOM',
                   'CATCHLINE', 'COLOPHON', 'DATE', 'SIGNATURES', 'SIGNATURE', 'SUMMARY', 'FACE', 'EDGE', 'COLUMN',
