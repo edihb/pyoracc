@@ -23,8 +23,8 @@ from unittest import TestCase
 
 import pytest
 
-from pyoracc.atf.common.atfyacc import AtfParser
-from ...atf.common.atflex import AtfLexer
+from pyoracc.atf.oracc.atfyacc import AtfOraccParser
+from pyoracc.atf.oracc.atflex import AtfOraccLexer
 from ...model.comment import Comment
 from ...model.composite import Composite
 from ...model.line import Line
@@ -43,12 +43,12 @@ from ...model.translation import Translation
 class TestParser(TestCase):
     """A class that contains all tests of the ATFParser"""
     def setUp(self):
-        self.lexer = AtfLexer().lexer
+        self.lexer = AtfOraccLexer().lexer
 
     def try_parse(self, content):
         if content[-1] != '\n':
             content += "\n"
-        self.parser = AtfParser().parser
+        self.parser = AtfOraccParser().parser
         return self.parser.parse(content, lexer=self.lexer)
 
     def test_code(self):

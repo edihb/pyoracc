@@ -6,8 +6,8 @@ def _generate_parsetab():
     Simple function to generate a parsetab file. This is done by creating a
     parser which automatically generates the parsetab file too.
     """
-    from pyoracc.atf.common.atfyacc import AtfParser
-    myparser = AtfParser()
+    from pyoracc.atf.oracc.atfyacc import AtfOraccParser
+    myparser = AtfOraccParser()
 
 
 def _pyversion():

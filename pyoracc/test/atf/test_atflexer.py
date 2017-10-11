@@ -27,7 +27,7 @@ from unittest import TestCase
 import pytest
 
 from pyoracc import _pyversion
-from pyoracc.atf.common.atflex import AtfLexer
+from pyoracc.atf.oracc.atflex import AtfOraccLexer
 
 if _pyversion() == 2:
     from itertools import izip_longest as zip_longest
@@ -38,7 +38,7 @@ else:
 class TestLexer(TestCase):
     """A class that contains all tests of the ATFLexer"""
     def setUp(self):
-        self.lexer = AtfLexer().lexer
+        self.lexer = AtfOraccLexer().lexer
 
     def compare_tokens(self, content, expected_types, expected_values=None,
                        expected_lineno=None, expected_lexpos=None):
@@ -71,7 +71,7 @@ class TestLexer(TestCase):
             for i in self.lexer:
                 pass
         # If we allow invalid syntax this should not raise
-        self.lexer = AtfLexer(skipinvalid=True).lexer
+        self.lexer = AtfOraccLexer(skipinvalid=True).lexer
         self.lexer.input(string)
         with pytest.warns(UserWarning) as record:
             for i in self.lexer:
@@ -956,7 +956,7 @@ class TestLexer(TestCase):
     def test_resolve_keyword_no_extra():
         '''Test that resolve_keyword works correcty when extra is not passes
         This never happes in actual code. Hench this test'''
-        mylexer = AtfLexer()
+        mylexer = AtfOraccLexer()
         result = mylexer.resolve_keyword('obverse',
                                          mylexer.structures)
         assert result == 'OBVERSE'

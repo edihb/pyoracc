@@ -17,11 +17,10 @@ You should have received a copy of the GNU General Public License
 along with PyORACC. If not, see <http://www.gnu.org/licenses/>.
 '''
 
+from ply import yacc as yacc
 
-import ply.yacc as yacc
 from pyoracc import _pyversion
 from pyoracc.atf.common.atflexicon import AtfLexicon
-
 from pyoracc.model.comment import Comment
 from pyoracc.model.composite import Composite
 from pyoracc.model.line import Line
@@ -39,10 +38,25 @@ from pyoracc.model.text import Text
 from pyoracc.model.translation import Translation
 
 
-class AtfParser(object):
+class AtfBaseParser(object):
+    precedence = (
+        # LOW precedence
+        ('nonassoc', 'TRANSLATIONEND'),
+        ('nonassoc', 'TABLET', 'ENVELOPE', 'PRISM', 'BULLA', 'SEALINGS',
+            'FRAGMENT', 'OBJECT', 'MULTI'),
+        ('nonassoc', 'OBVERSE', 'REVERSE', 'LEFT', 'RIGHT', 'TOP', 'BOTTOM',
+            'FACE',
+            'SURFACE', 'EDGE', 'COLUMN', 'SEAL', 'HEADING', 'LINE'),
+        ('nonassoc', "LINELABEL", "DOLLAR", "LEM", "NOTE", 'COMMENT',
+            'CATCHLINE', 'CHECK',
+            'COLOPHON', 'DATE', 'SIGNATURES',
+            'SIGNATURE', 'SUMMARY',
+            'WITNESSES', "PARBAR", "TO", "FROM"),
+        # HIGH precedence
+    )
     tokens = AtfLexicon.TOKENS
 
-    def __init__(self, tabmodule='pyoracc.atf.parsetab'):
+    def __init__(self, tabmodule):
         self.parser = yacc.yacc(module=self, tabmodule=tabmodule)
 
     @staticmethod
@@ -222,12 +236,6 @@ class AtfParser(object):
         p[0] = p[1]
 
     @staticmethod
-    def p_object_flag(p):
-        "object_specifier : object_specifier flag"
-        p[0] = p[1]
-        AtfParser.flag(p[0], p[2])
-
-    @staticmethod
     def flag(target, flag):
         if flag == "#":
             target.broken = True
@@ -238,9 +246,12 @@ class AtfParser(object):
         elif flag == "*":
             target.collated = True
 
-    # These MUST be kept as a separate parse rule,
-    # as the same keywords also occur
-    # in strict dollar lines
+    @staticmethod
+    def p_object_flag(p):
+        "object_specifier : object_specifier flag"
+        p[0] = p[1]
+        AtfBaseParser.flag(p[0], p[2])
+
     @staticmethod
     def p_object_nolabel(p):
         '''object_specifier : TABLET
@@ -286,7 +297,7 @@ class AtfParser(object):
     def p_surface_flag(p):
         "surface_specifier : surface_specifier flag"
         p[0] = p[1]
-        AtfParser.flag(p[0], p[2])
+        AtfBaseParser.flag(p[0], p[2])
 
     @staticmethod
     def p_surface_nolabel(p):
@@ -550,7 +561,7 @@ class AtfParser(object):
     def p_flagged_ruling(p):
         "ruling : ruling flag"
         p[0] = p[1]
-        AtfParser.flag(p[0], p[2])
+        AtfBaseParser.flag(p[0], p[2])
 
     @staticmethod
     def p_note(p):
@@ -651,10 +662,6 @@ class AtfParser(object):
         text = list(p)
         p[0] = State(text[-1], " ".join(text[1:-1]))
 
-    # This is reversed compared to the documentation but fairly common so
-    # We have to implement it. I.e. cams/gkab/00atf/ctn_4_032.atf and others
-    # http://oracc.museum.upenn.edu/doc/help/editinginatf/primer/structuretutorial/index.html
-    # section $-lines
     @staticmethod
     def p_state_singular_desc(p):
         """singular_state_desc : state singular_scope"""
@@ -915,39 +922,6 @@ class AtfParser(object):
         p[0] = p[1]
         p[0].score = p[2]
 
-    # There is a potential shift-reduce conflict in the following sample:
-    """
-      @tablet
-      @obverse
-      @translation
-      @obverse
-    """
-    # where (object(surface,translation(surface))) could be read as
-    # object(surface,translation(),surface)
-    # These need to be resolved by making surface establishment and composition
-    # take precedence over the completion of a translation
-
-    # A number of conflicts are also introduced by the default rules:
-
-    # A text can directly contain a line (implying obverse of a tablet) etc.
-    #
-
-    precedence = (
-        # LOW precedence
-        ('nonassoc', 'TRANSLATIONEND'),
-        ('nonassoc', 'TABLET', 'ENVELOPE', 'PRISM', 'BULLA', 'SEALINGS',
-            'FRAGMENT', 'OBJECT', 'MULTI'),
-        ('nonassoc', 'OBVERSE', 'REVERSE', 'LEFT', 'RIGHT', 'TOP', 'BOTTOM',
-            'FACE',
-            'SURFACE', 'EDGE', 'COLUMN', 'SEAL', 'HEADING', 'LINE'),
-        ('nonassoc', "LINELABEL", "DOLLAR", "LEM", "NOTE", 'COMMENT',
-            'CATCHLINE', 'CHECK',
-            'COLOPHON', 'DATE', 'SIGNATURES',
-            'SIGNATURE', 'SUMMARY',
-            'WITNESSES', "PARBAR", "TO", "FROM"),
-        # HIGH precedence
-    )
-
     @staticmethod
     def p_error(p):
         formatstring = u"PyOracc could not parse token '{}'.".format(p)
@@ -960,3 +934,5 @@ class AtfParser(object):
         # All errors currently unrecoverable
         # So just throw
         # Add list of params so PyORACC users can build their own error msgs.
+
+

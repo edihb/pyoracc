@@ -25,10 +25,10 @@ from unittest import TestCase, skip
 import pytest
 from pyoracc.atf.common.atffile import AtfFile
 
-from pyoracc.atf.common.atfyacc import AtfParser
+from pyoracc.atf.oracc.atfyacc import AtfOraccParser
 from pyoracc.model.line import Line
 from pyoracc.test.fixtures import belsunu, output_filepath
-from ...atf.common.atflex import AtfLexer
+from pyoracc.atf.oracc.atflex import AtfOraccLexer
 
 
 class TestSerializer(TestCase):
@@ -37,8 +37,8 @@ class TestSerializer(TestCase):
         """
         Initialize lexer and parser.
         """
-        self.lexer = AtfLexer().lexer
-        self.parser = AtfParser().parser
+        self.lexer = AtfOraccLexer().lexer
+        self.parser = AtfOraccParser().parser
 
     @staticmethod
     def parse(any_str):

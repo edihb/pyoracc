@@ -21,16 +21,72 @@ along with PyORACC. If not, see <http://www.gnu.org/licenses/>.
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-import re
 import warnings
 
-import ply.lex as lex
+from ply import lex as lex
 
 from pyoracc import _pyversion
 from pyoracc.atf.common.atflexicon import AtfLexicon
 
 
-class AtfLexer(object):
+class AtfBaseLexer(object):
+
+    states = AtfLexicon.STATES
+    inc_states = AtfLexicon.INC_STATES
+    inclusive_state_names = AtfLexicon.INCLUSIVE_STATE_NAMES
+    exc_states = AtfLexicon.EXC_STATES
+    exclusive_state_names = AtfLexicon.EXCLUSIVE_STATE_NAMES
+    keyword_tokens = AtfLexicon.KEYWORD_TOKENS
+    base_tokens = AtfLexicon.BASE_TOKENS
+    dollar_keywords = AtfLexicon.DOLLAR_KEYWORDS
+    translation_keywords = AtfLexicon.TRANSLATION_KEYWORDS
+    protocol_keywords = AtfLexicon.PROTOCOL_KEYWORDS
+    protocols = AtfLexicon.PROTOCOLS
+    long_argument_structures = AtfLexicon.LONG_ARGUMENT_STRUCTURES
+    structures = AtfLexicon.STRUCTURES
+    tokens = AtfLexicon.TOKENS
+
+    t_nonequals_EQUALS = AtfLexicon.T_EQUALS
+    t_flagged_EQUALS = AtfLexicon.T_EQUALS
+    t_flagged_parallel_para_HAT = "[\ \t]*\^[\ \t]*"
+    t_flagged_STAR = AtfLexicon.T_STAR
+    t_flagged_QUERY = AtfLexicon.T_QUERY
+    t_flagged_EXCLAIM = AtfLexicon.T_EXCLAIM
+    t_flagged_HASH = AtfLexicon.T_HASH
+    t_transctrl_MINUS = AtfLexicon.T_TRANSCTRL_MINUS
+    t_parallel_QUERY = AtfLexicon.T_QUERY
+    t_INITIAL_transctrl_PARENTHETICALID = "\([^\n\r]*\)"
+    t_PARBAR = AtfLexicon.T_PARBAR
+    t_COMMA = AtfLexicon.T_COMMA
+    t_TO = AtfLexicon.T_TO
+    t_FROM = AtfLexicon.T_FROM
+    t_MINUS = AtfLexicon.T_MINUS
+    t_DOLLAR = AtfLexicon.T_DOLLAR
+    t_STAR = AtfLexicon.T_STAR
+    t_QUERY = AtfLexicon.T_QUERY
+    t_EXCLAIM = AtfLexicon.T_EXCLAIM
+    t_HASH = AtfLexicon.T_HASH
+    t_AMPERSAND = AtfLexicon.T_AMPERSAND
+
+    t_lemmatize_SEMICOLON = r'\;[\ \t]*'
+    t_lemmatize_ID = "[^\;\n\r]+"
+    t_text_ID = "[^\ \t \n\r]+"
+    nonflag = r'[^\ \t\#\!\^\*\?\n\r\=]'
+    many_nonflag = nonflag + '*'
+    internalonly = r'[^\n\^\r\=]'
+    many_int_then_nonflag = '(' + internalonly + '*' + nonflag + '+' + ')'
+    intern_or_nonflg = '(' + many_int_then_nonflag + '|' + many_nonflag + ')'
+    nonflagnonwhite = r'[^\ \t\#\!\^\*\?\n\r\=]'
+    t_labeled_ID = "^[^\n\r]+"
+    translation_regex2 = '([^\^\n\r]|([\n\r](?=[ \t])))*'
+    translation_regex1 = '([^\?\^\n\r]|([\n\r](?=[ \t])))'
+    white = r'[\ \t]*'
+    flagged_regex = (white + '(' + nonflagnonwhite + intern_or_nonflg +
+                     ')' + white)
+    translation_regex = white + translation_regex1 + translation_regex2 + white
+
+    def __init__(self, skipinvalid):
+        self.skipinvalid = skipinvalid
 
     @staticmethod
     def _keyword_dict(tokens, extra):
@@ -45,48 +101,6 @@ class AtfLexer(object):
             extra = {}
         source = self._keyword_dict(source, extra)
         return source.get(value, fallback)
-
-    structures = AtfLexicon.STRUCTURES
-
-    long_argument_structures = AtfLexicon.LONG_ARGUMENT_STRUCTURES
-
-    protocols = AtfLexicon.PROTOCOLS
-
-    protocol_keywords = AtfLexicon.PROTOCOL_KEYWORDS
-
-    translation_keywords = AtfLexicon.TRANSLATION_KEYWORDS
-
-    dollar_keywords = AtfLexicon.DOLLAR_KEYWORDS
-
-    base_tokens = AtfLexicon.BASE_TOKENS
-
-    keyword_tokens = AtfLexicon.KEYWORD_TOKENS
-
-    tokens = AtfLexicon.TOKENS
-
-    exclusive_state_names = AtfLexicon.EXCLUSIVE_STATE_NAMES
-
-    exc_states = AtfLexicon.EXC_STATES
-
-    inclusive_state_names = AtfLexicon.INCLUSIVE_STATE_NAMES
-
-    inc_states = AtfLexicon.INC_STATES
-
-    states = AtfLexicon.STATES
-
-    t_AMPERSAND = AtfLexicon.T_AMPERSAND
-    t_HASH = AtfLexicon.T_HASH
-    t_EXCLAIM = AtfLexicon.T_EXCLAIM
-    t_QUERY = AtfLexicon.T_QUERY
-    t_STAR = AtfLexicon.T_STAR
-    t_DOLLAR = AtfLexicon.T_DOLLAR
-    t_MINUS = AtfLexicon.T_MINUS
-    t_FROM = AtfLexicon.T_FROM
-    t_TO = AtfLexicon.T_TO
-    t_COMMA = AtfLexicon.T_COMMA
-    t_PARBAR = AtfLexicon.T_PARBAR
-
-    t_INITIAL_transctrl_PARENTHETICALID = "\([^\n\r]*\)"
 
     def t_INITIAL_transctrl_WHITESPACE(self, t):
         r'[\t ]+'
@@ -124,7 +138,6 @@ class AtfLexer(object):
         t.type = "NEWLINE"
         return t
 
-    # In the base state, a newline doesn't change state
     @staticmethod
     def t_NEWLINE(t):
         r'\s*[\n\r]'
@@ -136,8 +149,8 @@ class AtfLexer(object):
         t.value = t.value[1:]
         t.lexpos += 1
         t.type = self.resolve_keyword(t.value,
-                                      AtfLexer.structures +
-                                      AtfLexer.long_argument_structures,
+                                      AtfBaseLexer.structures +
+                                      AtfBaseLexer.long_argument_structures,
                                       extra={
                                           "h1": "HEADING",
                                           "h2": "HEADING",
@@ -165,7 +178,7 @@ class AtfLexer(object):
         if t.type == "SCORE":
             t.lexer.push_state('score')
 
-        if t.type in AtfLexer.long_argument_structures + ["NOTE"]:
+        if t.type in AtfBaseLexer.long_argument_structures + ["NOTE"]:
             t.lexer.push_state('flagged')
         if t.type is None:
             formatstring = u"Illegal @STRING '{}'".format(t.value)
@@ -196,7 +209,7 @@ class AtfLexer(object):
         # Use lower here since there are some ATF files with
         # the protocol incorrectly written as #NOTE:
         t.type = self.resolve_keyword(t.value.lower(),
-                                      AtfLexer.protocols,
+                                      AtfBaseLexer.protocols,
                                       extra={'CHECK': 'CHECK'})
         if t.type == "KEY":
             t.lexer.push_state('nonequals')
@@ -243,10 +256,10 @@ class AtfLexer(object):
         t.value = t.value.replace(u'\u2019', "'")
         t.value = t.value.replace(u'\xb4', "'")
         t.type = self.resolve_keyword(t.value,
-                                      AtfLexer.protocol_keywords +
-                                      AtfLexer.dollar_keywords +
-                                      AtfLexer.structures +
-                                      AtfLexer.long_argument_structures, 'ID',
+                                      AtfBaseLexer.protocol_keywords +
+                                      AtfBaseLexer.dollar_keywords +
+                                      AtfBaseLexer.structures +
+                                      AtfBaseLexer.long_argument_structures, 'ID',
                                       extra={
                                           'fragments': "FRAGMENT",
                                           "parallel": "PARALLEL"
@@ -256,18 +269,14 @@ class AtfLexer(object):
         if t.type in ['LANG']:
             t.lexer.push_state('flagged')
 
-        if t.type in set(AtfLexer.structures +
-                         AtfLexer.long_argument_structures) - set(["NOTE"]):
+        if t.type in set(AtfBaseLexer.structures +
+                         AtfBaseLexer.long_argument_structures) - set(["NOTE"]):
             # Since @structure tokens are so important to the grammar,
             # the keywords refering to structural elements in strict dollar
             # lines must be DIFFERENT TOKENS IN THE LEXER
             t.type = "REFERENCE"
         return t
 
-    # In the flagged, text, transctrl and lemmatize states,
-    # one or more newlines returns to the base state
-    # In several of the files such as bb_2_006.atf the blank line contains tab
-    # or other trailing whitespace
     @staticmethod
     def t_flagged_text_lemmatize_transctrl_nonequals_absorb_NEWLINE(t):
         r'[\n\r]*\s*[\n\r]+'
@@ -275,15 +284,6 @@ class AtfLexer(object):
         t.lexer.pop_state()
         return t
 
-    # --- RULES FOR THE TRANSLATION STATES ---
-    # In this state, the base state is free text
-    # And certain tokens deviate from that, rather
-    # than the other way round as for base state
-
-    # Unicode 2019 is right single quotation
-    # Unicode 02cCA is MODIFIER LETTER ACUTE ACCENT
-    # Unicode 2032  is PRIME
-    # All of these could be used as prime
     def t_transctrl_ID(self, t):
         u'[a-zA-Z0-9][a-zA-Z\'\u2019\u2032\u02CA\xb4\/\.0-9\:\-\[\]_' \
           u'\u2080-\u2089]*'
@@ -292,11 +292,11 @@ class AtfLexer(object):
         t.value = t.value.replace(u'\u02CA', "'")
         t.value = t.value.replace(u'\xb4', "'")
         t.type = self.resolve_keyword(t.value,
-                                      AtfLexer.protocol_keywords +
-                                      AtfLexer.dollar_keywords +
-                                      AtfLexer.structures +
-                                      AtfLexer.translation_keywords +
-                                      AtfLexer.long_argument_structures, 'ID',
+                                      AtfBaseLexer.protocol_keywords +
+                                      AtfBaseLexer.dollar_keywords +
+                                      AtfBaseLexer.structures +
+                                      AtfBaseLexer.translation_keywords +
+                                      AtfBaseLexer.long_argument_structures, 'ID',
                                       extra={'fragments': "FRAGMENT"}
                                       )
 
@@ -309,15 +309,13 @@ class AtfLexer(object):
             t.lexer.push_state('parallel')
             t.lexer.push_state('transctrl')
 
-        if t.type in set(AtfLexer.structures +
-                         AtfLexer.long_argument_structures) - set(["NOTE"]):
+        if t.type in set(AtfBaseLexer.structures +
+                         AtfBaseLexer.long_argument_structures) - set(["NOTE"]):
             # Since @structure tokens are so important to the grammar,
             # the keywords refering to structural elements in strict dollar
             # lines must be DIFFERENT TOKENS IN THE LEXER
             t.type = "REFERENCE"
         return t
-
-    t_parallel_QUERY = AtfLexicon.T_QUERY
 
     @staticmethod
     def t_parallel_LINELABEL(t):
@@ -331,24 +329,18 @@ class AtfLexer(object):
         t.lexer.push_state("absorb")
         return t
 
-    t_transctrl_MINUS = AtfLexicon.T_TRANSCTRL_MINUS
-
     @staticmethod
     def t_transctrl_CLOSER(t):
         "\)"
         t.lexer.pop_state()
         return t
 
-    # In parallel states, a newline doesn't change state
-    # A newline followed by a space gives continuation
     @staticmethod
     def t_parallel_NEWLINE(t):
         r'\s*[\n\r](?![ \t])'
         t.lexer.lineno += t.value.count("\n")
         return t
 
-    # In interlinear states, a newline which is not continuation leaves state
-    # A newline followed by a space gives continuation
     @staticmethod
     def t_interlinear_NEWLINE(t):
         r'\s*[\n\r](?![ \t])'
@@ -356,25 +348,11 @@ class AtfLexer(object):
         t.lexer.pop_state()
         return t
 
-    # In labeled translation, a newline doesn't change state
-    # A newline just passed through
     @staticmethod
     def t_labeled_NEWLINE(t):
         r'\s*[\n\r]'
         t.lexer.lineno += t.value.count("\n")
         return t
-
-    # Flag characters (#! etc ) don't apply in translations
-    # But reference anchors ^1^ etc do.
-    # lines beginning with a space are continuations
-    white = r'[\ \t]*'
-    # translation_regex1 and translation_regex2 are identical appart from the
-    # fact that the first character may not be a ?
-    # We are looking for a string that does not start with ? it may include
-    # newlines if they are followed by a whitespace.
-    translation_regex1 = '([^\?\^\n\r]|([\n\r](?=[ \t])))'
-    translation_regex2 = '([^\^\n\r]|([\n\r](?=[ \t])))*'
-    translation_regex = white + translation_regex1 + translation_regex2 + white
 
     @lex.TOKEN(translation_regex)
     def t_parallel_interlinear_ID(self, t):
@@ -392,42 +370,12 @@ class AtfLexer(object):
         t.lexer.pop_state()
         return t
 
-    # This next rule should be unnecessary, as
-    # paragraphs absorb multiple lines anyway
-    # But because some malformed texts terminate translation blocks
-    # with the next label, not a double-newline, fake labels, lines
-    # which look like
-    # labels, can cause apparent terminations of blocks
-    # So we add this rule to accommodate these
-    t_labeled_ID = "^[^\n\r]+"
-    # --- RULES FOR THE ABSORB STATE ---
-    # Used for states where only flag# characters! and ^1^ references
-    # Are separately tokenised
-
-    nonflagnonwhite = r'[^\ \t\#\!\^\*\?\n\r\=]'
-    internalonly = r'[^\n\^\r\=]'
-    nonflag = r'[^\ \t\#\!\^\*\?\n\r\=]'
-    many_int_then_nonflag = '(' + internalonly + '*' + nonflag + '+' + ')'
-    many_nonflag = nonflag + '*'
-    intern_or_nonflg = '(' + many_int_then_nonflag + '|' + many_nonflag + ')'
-    flagged_regex = (white + '(' + nonflagnonwhite + intern_or_nonflg +
-                     ')' + white)
-
     @lex.TOKEN(flagged_regex)
     def t_flagged_ID(self, t):
         # Discard leading whitespace, token is not flag or newline
         # And has at least one non-whitespace character
         t.value = t.value.strip()
         return t
-
-    t_flagged_HASH = AtfLexicon.T_HASH
-    t_flagged_EXCLAIM = AtfLexicon.T_EXCLAIM
-    t_flagged_QUERY = AtfLexicon.T_QUERY
-    t_flagged_STAR = AtfLexicon.T_STAR
-    t_flagged_parallel_para_HAT = "[\ \t]*\^[\ \t]*"
-    t_flagged_EQUALS = AtfLexicon.T_EQUALS
-    # --- Rules for paragaph state----------------------------------
-    # Free text, ended by double new line
 
     terminates_para = \
         "(\#|\@[^i][^\{]|\&|\Z|(^[0-9]+[\'\u2019\u2032\u02CA\xb4]?\.))"
@@ -439,7 +387,6 @@ class AtfLexer(object):
         t.value = t.value.strip()
         return t
 
-    # Paragraph state is ended by a double newline
     @staticmethod
     def t_para_NEWLINE(t):
         r'\r?\n\s*[\n\r]*\n'
@@ -447,12 +394,6 @@ class AtfLexer(object):
         t.lexer.pop_state()
         return t
 
-    # BUT, exceptionally to fix existing bugs in active members of corpus,
-    # it is also ended by an @label or an @(), or a new document,
-    # Or a linelabel, or the end of the stream. Importantly it does not end
-    # by @i{xxx} which is used for un translated words.
-    # and these tokens are not absorbed by this token
-    # Translation paragraph state is ended by a double newline
     @lex.TOKEN(r'\r?\n(?=' + terminates_para + ')')
     def t_para_MAGICNEWLINE(self, t):
         t.lexer.lineno += t.value.count("\n")
@@ -460,36 +401,22 @@ class AtfLexer(object):
         t.type = "NEWLINE"
         return t
 
-    # --- RULES FOR THE nonequals STATE -----
-    # Absorb everything except an equals
     @staticmethod
     def t_nonequals_ID(t):
         "[^\=\n\r]+"
         t.value = t.value.strip()
         return t
 
-    t_nonequals_EQUALS = AtfLexicon.T_EQUALS
-
-    # --- RULES FOR THE absorb STATE -----
-    # Absorb everything
     @staticmethod
     def t_absorb_ID(t):
         "[^\n\r]+"
         t.value = t.value.strip()
         return t
 
-    # --- RULES FOR THE text STATE ----
-    t_text_ID = "[^\ \t \n\r]+"
-
     def t_text_SPACE(self, t):
         r'[\ \t]'
         # No token generated
 
-    # --- RULES FOR THE lemmatize STATE
-    t_lemmatize_ID = "[^\;\n\r]+"
-    t_lemmatize_SEMICOLON = r'\;[\ \t]*'
-
-    # Error handling rule
     def t_ANY_error(self, t):
         fstring = u"PyOracc got an illegal character '{}'".format(t.value[0])
         valuestring = t.value
@@ -504,6 +431,4 @@ class AtfLexer(object):
             raise SyntaxError(fstring,
                               (None, t.lineno, t.lexpos, valuestring))
 
-    def __init__(self, skipinvalid=False, debug=0):
-        self.skipinvalid = skipinvalid
-        self.lexer = lex.lex(module=self, reflags=re.MULTILINE, debug=debug)
+

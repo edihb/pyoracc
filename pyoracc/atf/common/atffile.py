@@ -20,8 +20,8 @@ along with PyORACC. If not, see <http://www.gnu.org/licenses/>.
 
 from mako.template import Template
 
-from .atflex import AtfLexer
-from .atfyacc import AtfParser
+from pyoracc.atf.oracc.atflex import AtfOraccLexer
+from pyoracc.atf.oracc.atfyacc import AtfOraccParser
 
 
 class AtfFile(object):
@@ -32,8 +32,8 @@ class AtfFile(object):
         self.content = content
         if content[-1] != '\n':
             content += "\n"
-        lexer = AtfLexer().lexer
-        parser = AtfParser().parser
+        lexer = AtfOraccLexer().lexer
+        parser = AtfOraccParser().parser
         self.text = parser.parse(content, lexer=lexer)
 
     def __str__(self):
@@ -46,12 +46,12 @@ class AtfFile(object):
 def _debug_lex_and_yac_file(infile, debug=0, skipinvalid=False):
     import codecs
     text = codecs.open(infile, encoding='utf-8-sig').read()
-    lexer = AtfLexer(debug=debug, skipinvalid=skipinvalid).lexer
+    lexer = AtfOraccLexer(debug=debug, skipinvalid=skipinvalid).lexer
     lexer.input(text)
     for tok in lexer:
         print(tok)
     print("Lexed file")
-    lexer = AtfLexer().lexer
-    parser = AtfParser().parser
+    lexer = AtfOraccLexer().lexer
+    parser = AtfOraccParser().parser
     parser.parse(text, lexer=lexer)
     print("Parsed file")
