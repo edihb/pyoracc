@@ -259,8 +259,9 @@ class AtfLexer(object):
                 warnings.warn(formatstring, UserWarning)
                 return
             else:
-                raise SyntaxError(formatstring,
-                                  (None, t.lineno, t.lexpos, valuestring))
+                print(SyntaxError(formatstring,
+                                  (None, t.lineno, t.lexpos, valuestring)))
+                return
         return t
 
     def t_labeled_OPENR(self, t):
@@ -301,8 +302,9 @@ class AtfLexer(object):
                 warnings.warn(formatstring, UserWarning)
                 return
             else:
-                raise SyntaxError(formatstring,
-                                  (None, t.lineno, t.lexpos, valuestring))
+                print(SyntaxError(formatstring,
+                                  (None, t.lineno, t.lexpos, valuestring)))
+                return
         return t
 
     def t_LINELABEL(self, t):

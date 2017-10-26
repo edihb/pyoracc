@@ -830,8 +830,8 @@ class AtfParser(object):
         if _pyversion() == 2:
             formatstring = formatstring.encode('UTF-8')
             valuestring = valuestring.encode('UTF-8')
-        raise SyntaxError(formatstring,
-                          (None, p.lineno, p.lexpos, valuestring))
+        print(SyntaxError(formatstring,
+                          (None, p.lineno, p.lexpos, valuestring)))
         # All errors currently unrecoverable
         # So just throw
         # Add list of params so PyORACC users can build their own error msgs.
